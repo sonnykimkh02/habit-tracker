@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #0d0c0a;
+  --bg2:    #181714;
+  --bg3:    #222019;
+  --bg4:    #2a2824;
+  --border: rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --border3:rgba(255,255,255,0.20);
+  --text:   #ede9e2;
+  --text2:  rgba(237,233,226,0.5);
+  --text3:  rgba(237,233,226,0.28);
+  --c0: #5b8dd9;
+  --c1: #3dba8f;
+  --c2: #e09a30;
+  --c3: #d96b8c;
+  --r: 12px;
+  --rs: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-weight:400;
+  min-height:100vh;
+  line-height:1.5;
+}
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 70% 45% at 85% 10%, rgba(91,141,217,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 55% at 5%  85%, rgba(61,186,143,0.04) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(217,107,140,0.025) 0%, transparent 60%);
+  pointer-events:none;z-index:0;
+}
+.page{
+  position:relative;z-index:1;
+  max-width:1060px;
+  margin:0 auto;
+  padding:44px 24px 88px;
+}
+
+/* ─── Header ─── */
+.header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:40px;gap:16px;
+  border-bottom:1px solid var(--border);
+  padding-bottom:28px;
+}
+.header h1{
+  font-family:'Instrument Serif',serif;
+  font-size:46px;font-weight:400;
+  letter-spacing:-0.025em;line-height:1;
+  color:var(--text);
+}
+.header h1 em{font-style:italic;color:var(--text2)}
+.header-date{
+  font-size:12px;color:var(--text3);
+  margin-top:8px;letter-spacing:0.08em;text-transform:uppercase;
+}
+.header-streak{
+  font-size:13px;color:var(--text2);
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:20px;padding:6px 14px;
+  white-space:nowrap;flex-shrink:0;
+}
+
+/* ─── Section label ─── */
+.sec{
+  font-size:10px;font-weight:500;
+  color:var(--text3);letter-spacing:0.12em;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+
+/* ─── Today habits ─── */
+.today-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+.habit-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;
+  transition:border-color .18s, background .18s, transform .08s;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;overflow:hidden;
+}
+.habit-card::after{
+  content:'';
+  position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--hc);
+  opacity:0;transition:opacity .2s;
+  border-radius:3px 0 0 3px;
+}
+.habit-card.done::after{opacity:1}
+.habit-card:hover{border-color:var(--border2);background:var(--bg3)}
+.habit-card:active{transform:scale(0.997)}
+.habit-card.done{border-color:var(--hc);background:var(--bg3)}
+.h-icon{
+  font-size:18px;width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:9px;flex-shrink:0;
+  transition:border-color .18s;
+}
+.habit-card.done .h-icon{border-color:var(--hc)}
+.h-info{flex:1;min-width:0}
+.h-name{
+  font-size:13px;font-weight:500;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.h-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.h-check{
+  width:22px;height:22px;border-radius:50%;
+  border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .18s;
+}
+.habit-card.done .h-check{background:var(--hc);border-color:var(--hc)}
+.ck{display:none}
+.habit-card.done .ck{display:block}
+
+/* ─── Legend ─── */
+.legend{
+  display:flex;flex-wrap:wrap;gap:12px;
+  margin-bottom:28px;
+}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ─── Two-col layout for week + month ─── */
+.calendars{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:16px;
+  align-items:start;
+}
+.cal-block{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:18px;
+}
+.cal-block-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;gap:10px;
+  flex-wrap:wrap;
+}
+.cal-block-title{
+  font-size:13px;font-weight:500;color:var(--text);
+}
+.pct-badge{
+  font-size:11px;font-weight:500;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:20px;padding:3px 10px;
+  color:var(--text2);white-space:nowrap;
+}
+.pct-badge b{color:var(--text);font-weight:600}
+
+/* week grid */
+.wg-heads,.wg-cells{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.wg-heads{margin-bottom:4px}
+.wg-head{text-align:center;font-size:10px;color:var(--text3);letter-spacing:0.05em;padding:2px 0}
+.wg-cell{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:7px;padding:7px 4px 6px;min-height:58px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  transition:border-color .15s;
+}
+.wg-cell.today{border-color:rgba(237,233,226,0.28);background:var(--bg4)}
+.wg-date{font-size:11px;color:var(--text2);font-weight:500}
+.wg-cell.today .wg-date{color:var(--text)}
+.wg-dots{display:flex;flex-direction:column;gap:3px;align-items:center}
+.dot-r{display:flex;gap:3px}
+.wd{width:7px;height:7px;border-radius:50%}
+.wd.miss{background:var(--text);opacity:0.1}
+
+/* month grid */
+.mg-nav{display:flex;align-items:center;gap:8px}
+.mg-nav-btn{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:6px;color:var(--text2);
+  font-size:13px;width:24px;height:24px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.mg-nav-btn:hover{border-color:var(--border2);color:var(--text)}
+.mg-title{font-size:13px;font-weight:500;color:var(--text)}
+.mg-heads,.mg-cells{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.mg-heads{margin-bottom:3px}
+.mg-head{text-align:center;font-size:10px;color:var(--text3);padding:2px 0;letter-spacing:0.04em}
+.mg-cell{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:5px;padding:4px 3px 3px;min-height:34px;
+}
+.mg-cell.empty{background:transparent;border-color:transparent}
+.mg-cell.today-c{border-color:rgba(237,233,226,0.22);background:var(--bg4)}
+.mg-date{font-size:9px;color:var(--text3);text-align:right;margin-bottom:3px}
+.mg-cell.today-c .mg-date{color:var(--text2)}
+.mbars{display:flex;flex-direction:column;gap:2px}
+.mbar{height:2px;border-radius:1px}
+
+/* ─── Progress section ─── */
+.progress-section{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:16px;
+}
+.prog-block{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:18px;
+}
+.prog-block-header{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:16px;
+}
+.prog-block-title{font-size:13px;font-weight:500;color:var(--text)}
+.prog-total-pct{
+  font-family:'Instrument Serif',serif;
+  font-size:24px;font-weight:400;color:var(--text);line-height:1;
+}
+.prog-item{
+  display:grid;
+  grid-template-columns:26px 1fr 40px;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+.prog-item:last-child{margin-bottom:0}
+.prog-icon{font-size:16px;text-align:center}
+.prog-track{
+  height:5px;background:var(--bg4);
+  border-radius:3px;overflow:hidden;
+  border:1px solid var(--border);
+}
+.prog-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.prog-count{font-size:11px;color:var(--text3);text-align:right;font-variant-numeric:tabular-nums}
+
+/* ─── Time Progress ─── */
+.time-section{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:22px 24px;
+}
+.time-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;
+}
+.time-title{font-size:13px;font-weight:500;color:var(--text)}
+.time-clock{
+  font-size:11px;color:var(--text3);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0.04em;
+}
+.time-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:0;
+}
+.time-item{
+  display:flex;flex-direction:column;align-items:center;
+  padding:0 12px;
+  border-right:1px solid var(--border);
+}
+.time-item:last-child{border-right:none}
+.time-label{
+  font-size:10px;color:var(--text3);
+  letter-spacing:0.1em;text-transform:uppercase;
+  margin-bottom:14px;font-weight:500;
+}
+.time-ring-wrap{
+  position:relative;
+  width:80px;height:80px;
+  margin-bottom:12px;
+}
+.time-ring-wrap svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--bg4);stroke-width:5}
+.ring-fill{
+  fill:none;stroke-width:5;stroke-linecap:round;
+  transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1);
+}
+.ring-txt{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.ring-num{
+  font-family:'Instrument Serif',serif;
+  font-size:20px;font-weight:400;color:var(--text);line-height:1;
+}
+.ring-pct-sym{font-size:10px;color:var(--text3);margin-top:1px}
+.time-detail{
+  font-size:10px;color:var(--text3);text-align:center;line-height:1.6;
+}
+
+/* ─── Responsive ─── */
+@media(max-width:720px){
+  .calendars,.progress-section{grid-template-columns:1fr}
+  .time-grid{grid-template-columns:repeat(2,1fr)}
+  .time-item{border-right:none;border-bottom:1px solid var(--border);padding:16px 0}
+  .time-item:nth-child(odd){border-right:1px solid var(--border)}
+  .time-item:last-child,.time-item:nth-last-child(2){border-bottom:none}
+  .today-grid{grid-template-columns:1fr}
+  .header h1{font-size:34px}
+}
+@media(max-width:480px){
+  .page{padding:24px 14px 60px}
+  .time-ring-wrap{width:64px;height:64px}
+  .ring-num{font-size:17px}
+}
+
+/* ─── Animations ─── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.page>*{animation:fadeUp .38s ease both}
+.header{animation-delay:.00s}
+.sec,.today-grid{animation-delay:.05s}
+.legend{animation-delay:.08s}
+.calendars{animation-delay:.11s}
+.progress-section{animation-delay:.15s}
+.time-section{animation-delay:.19s}
+
+/* ─── Curriculum Section ─── */
+.curriculum-section{
+  margin-top:16px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.curriculum-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px 16px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  user-select:none;
+}
+.curriculum-header:hover{background:var(--bg3)}
+.curriculum-title-row{display:flex;align-items:center;gap:12px}
+.curriculum-title{
+  font-family:'Instrument Serif',serif;
+  font-size:20px;font-weight:400;color:var(--text);
+}
+.curriculum-overall{
+  font-size:11px;color:var(--text3);
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:20px;padding:3px 10px;
+  white-space:nowrap;
+}
+.curriculum-overall b{color:var(--text);font-weight:600}
+.curriculum-toggle{
+  font-size:12px;color:var(--text3);
+  display:flex;align-items:center;gap:6px;
+  transition:transform .25s;
+}
+.curriculum-toggle.open{transform:rotate(180deg)}
+.curriculum-body{display:none}
+.curriculum-body.open{display:block}
+.curriculum-progress-bar{
+  height:3px;background:var(--bg4);
+  margin:0 24px 0;
+}
+.curriculum-progress-fill{
+  height:3px;background:linear-gradient(90deg,#5b8dd9,#3dba8f);
+  border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1);
+}
+.chapter-block{
+  border-bottom:1px solid var(--border);
+}
+.chapter-block:last-child{border-bottom:none}
+.chapter-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px 12px;
+  cursor:pointer;user-select:none;
+  transition:background .15s;
+}
+.chapter-header:hover{background:var(--bg3)}
+.chapter-title{font-size:13px;font-weight:500;color:var(--text)}
+.chapter-meta{display:flex;align-items:center;gap:10px}
+.chapter-count{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+.chapter-mini-bar{
+  width:60px;height:4px;background:var(--bg4);
+  border-radius:2px;overflow:hidden;
+}
+.chapter-mini-fill{height:100%;border-radius:2px;background:#5b8dd9;transition:width .4s}
+.chapter-chevron{
+  font-size:10px;color:var(--text3);margin-left:6px;
+  transition:transform .2s;display:inline-block;
+}
+.chapter-header.open .chapter-chevron{transform:rotate(180deg)}
+.items-list{
+  display:none;
+  padding:4px 24px 12px 40px;
+  display:none;
+}
+.items-list.open{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 16px;}
+.item-row{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 0;
+  cursor:pointer;user-select:none;
+  border-radius:6px;
+  transition:background .12s;
+}
+.item-row:hover{background:var(--bg3)}
+.item-cb{
+  width:15px;height:15px;border-radius:4px;
+  border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .15s;background:transparent;
+}
+.item-row.checked .item-cb{
+  background:#5b8dd9;border-color:#5b8dd9;
+}
+.item-num{font-size:11px;color:var(--text3);min-width:28px;font-variant-numeric:tabular-nums}
+.item-name{font-size:12px;color:var(--text2);line-height:1.4}
+.item-row.checked .item-name{color:var(--text3);text-decoration:line-through;text-decoration-color:var(--border2)}
+@media(max-width:600px){
+  .items-list.open{grid-template-columns:1fr}
+  .chapter-header{padding:12px 16px}
+  .curriculum-header{padding:16px 18px 14px}
+  .items-list{padding-left:16px;padding-right:16px}
+}
+
+/* ─── Kelly Section ─── */
+.kelly-section{
+  margin-top:16px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.kelly-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px 16px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;user-select:none;
+}
+.kelly-header:hover{background:var(--bg3)}
+.kelly-title-row{display:flex;align-items:center;gap:12px}
+.kelly-title{
+  font-family:'Instrument Serif',serif;
+  font-size:20px;font-weight:400;color:var(--text);
+}
+.kelly-overall{
+  font-size:11px;color:var(--text3);
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:20px;padding:3px 10px;white-space:nowrap;
+}
+.kelly-overall b{color:var(--text);font-weight:600}
+.kelly-toggle{font-size:12px;color:var(--text3)}
+.kelly-body{display:none}
+.kelly-body.open{display:block}
+.kelly-prog-wrap{padding:12px 24px 0}
+.kelly-prog-bar{height:3px;background:var(--bg4);border-radius:2px;margin-bottom:16px}
+.kelly-prog-fill{height:3px;background:linear-gradient(90deg,#3dba8f,#9b7fe8);border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.kelly-group{border-bottom:1px solid var(--border)}
+.kelly-group:last-child{border-bottom:none}
+.kelly-group-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 24px 11px;cursor:pointer;user-select:none;transition:background .15s;
+}
+.kelly-group-header:hover{background:var(--bg3)}
+.kelly-group-title{font-size:13px;font-weight:500;color:var(--text)}
+.kelly-group-meta{display:flex;align-items:center;gap:10px}
+.kelly-group-count{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+.kelly-mini-bar{width:60px;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.kelly-mini-fill{height:100%;border-radius:2px;background:#3dba8f;transition:width .4s}
+.kelly-chevron{font-size:10px;color:var(--text3);margin-left:6px;transition:transform .2s;display:inline-block}
+.kelly-group-header.open .kelly-chevron{transform:rotate(180deg)}
+.kelly-items{display:none;padding:4px 24px 14px 40px}
+.kelly-items.open{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 16px}
+.kelly-item{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 4px;cursor:pointer;user-select:none;
+  border-radius:6px;transition:background .12s;
+}
+.kelly-item:hover{background:var(--bg3)}
+.kelly-item-cb{
+  width:15px;height:15px;border-radius:4px;
+  border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .15s;
+}
+.kelly-item.checked .kelly-item-cb{background:#3dba8f;border-color:#3dba8f}
+.kelly-item-num{font-size:11px;color:var(--text3);min-width:28px;font-variant-numeric:tabular-nums}
+.kelly-item-name{font-size:12px;color:var(--text2);line-height:1.4}
+.kelly-item.checked .kelly-item-name{color:var(--text3);text-decoration:line-through;text-decoration-color:var(--border2)}
+@media(max-width:600px){
+  .kelly-items.open{grid-template-columns:1fr}
+  .kelly-group-header{padding:12px 16px}
+  .kelly-header{padding:16px 18px 14px}
+  .kelly-items{padding-left:16px;padding-right:16px}
+}
+
+/* ─── BBC Section ─── */
+.bbc-section{
+  margin-top:16px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:18px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;
+  transition:border-color .18s, background .18s;
+}
+.bbc-section:hover{border-color:var(--border2);background:var(--bg3)}
+.bbc-left{display:flex;align-items:center;gap:14px}
+.bbc-icon{
+  font-size:22px;width:42px;height:42px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;flex-shrink:0;
+}
+.bbc-text{}
+.bbc-title{
+  font-family:'Instrument Serif',serif;
+  font-size:20px;font-weight:400;color:var(--text);line-height:1.2;
+}
+.bbc-subtitle{font-size:11px;color:var(--text3);margin-top:3px;letter-spacing:0.02em}
+.bbc-link{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:500;color:var(--text2);
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:20px;padding:6px 14px;
+  text-decoration:none;
+  transition:all .15s;white-space:nowrap;flex-shrink:0;
+}
+.bbc-link:hover{color:var(--text);border-color:var(--border3)}
+.bbc-link svg{flex-shrink:0}
+
+/* ─── Loading overlay ─── */
+#loading-overlay{
+  position:fixed;inset:0;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;gap:16px;
+}
+.loading-spinner{
+  width:32px;height:32px;
+  border:2px solid var(--border2);
+  border-top-color:var(--text2);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+.loading-text{font-size:13px;color:var(--text3);letter-spacing:0.06em}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">데이터 불러오는 중...</div>
+</div>
+<div class="page">
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <h1>꾸준함에는 <em>생각이 필요없다</em></h1>
+    <div class="header-date" id="today-label"></div>
+  </div>
+  <div class="header-streak" id="header-streak"></div>
+</div>
+
+<!-- Today -->
+<div class="sec">오늘의 습관</div>
+<div class="today-grid" id="today-grid"></div>
+<div class="legend" id="legend"></div>
+
+<!-- Calendars side by side -->
+<div class="calendars">
+  <!-- Week -->
+  <div class="cal-block">
+    <div class="cal-block-header">
+      <div class="cal-block-title">이번 주</div>
+      <div class="pct-badge">주간 달성률 <b id="week-pct-badge">0%</b></div>
+    </div>
+    <div class="wg-heads" id="wg-heads"></div>
+    <div class="wg-cells" id="wg-cells"></div>
+  </div>
+
+  <!-- Month -->
+  <div class="cal-block">
+    <div class="cal-block-header">
+      <div class="mg-nav">
+        <button class="mg-nav-btn" onclick="changeMonth(-1)">&#8592;</button>
+        <span class="mg-title" id="mg-title"></span>
+        <button class="mg-nav-btn" onclick="changeMonth(1)">&#8594;</button>
+      </div>
+      <div class="pct-badge">월별 달성률 <b id="month-pct-badge">0%</b></div>
+    </div>
+    <div class="mg-heads" id="mg-heads"></div>
+    <div class="mg-cells" id="mg-cells"></div>
+  </div>
+</div>
+
+<!-- Progress bars -->
+<div class="progress-section">
+  <div class="prog-block">
+    <div class="prog-block-header">
+      <div class="prog-block-title">주간 진행률</div>
+      <div class="prog-total-pct" id="week-total-pct">0%</div>
+    </div>
+    <div id="week-progress"></div>
+  </div>
+
+  <div class="prog-block">
+    <div class="prog-block-header">
+      <div class="prog-block-title">월별 진행률</div>
+      <div class="prog-total-pct" id="month-total-pct">0%</div>
+    </div>
+    <div id="month-progress"></div>
+  </div>
+</div>
+
+<!-- Time Progress -->
+<div class="time-section">
+  <div class="time-header">
+    <div class="time-title">Time Progress</div>
+    <div class="time-clock" id="time-clock"></div>
+  </div>
+  <div class="time-grid" id="time-grid"></div>
+</div>
+
+
+<!-- BBC News -->
+<div class="bbc-section">
+  <div class="bbc-left">
+    <div class="bbc-icon">🇬🇧</div>
+    <div class="bbc-text">
+      <div class="bbc-title">BBC 뉴스 보기</div>
+      <div class="bbc-subtitle">youtube.com/@BBCNews</div>
+    </div>
+  </div>
+  <a class="bbc-link" href="https://www.youtube.com/@BBCNews/videos" target="_blank" rel="noopener">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M2 10L10 2M10 2H4.5M10 2V7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    바로가기
+  </a>
+</div>
+
+<!-- Curriculum -->
+<div class="curriculum-section" id="curriculum-section">
+  <div class="curriculum-header" onclick="toggleCurriculum()">
+    <div class="curriculum-title-row">
+      <div class="curriculum-title">소피반 생존회화 전체 목차</div>
+      <div class="curriculum-overall">완료 <b id="curr-done">0</b> / <b id="curr-total">0</b></div>
+    </div>
+    <div class="curriculum-toggle" id="curr-toggle">▼</div>
+  </div>
+  <div class="curriculum-body" id="curr-body">
+    <div style="padding:0 24px 0">
+      <div class="curriculum-progress-bar" style="margin:12px 0 16px">
+        <div class="curriculum-progress-fill" id="curr-prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="curr-chapters"></div>
+  </div>
+</div>
+
+
+<!-- Kelly Section -->
+<div class="kelly-section" id="kelly-section">
+  <div class="kelly-header" onclick="toggleKelly()">
+    <div class="kelly-title-row">
+      <div class="kelly-title">켈리쌤 브이로그 영어</div>
+      <div class="kelly-overall">완료 <b id="kelly-done">0</b> / <b id="kelly-total">0</b></div>
+    </div>
+    <div class="kelly-toggle" id="kelly-toggle">▼</div>
+  </div>
+  <div class="kelly-body" id="kelly-body">
+    <div class="kelly-prog-wrap">
+      <div class="kelly-prog-bar">
+        <div class="kelly-prog-fill" id="kelly-prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="kelly-groups"></div>
+  </div>
+</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAYG6_IhbnJoxrVA7NeCECyLaxZDp7GgS8",
+  authDomain: "englishhabittracker.firebaseapp.com",
+  projectId: "englishhabittracker",
+  storageBucket: "englishhabittracker.firebasestorage.app",
+  messagingSenderId: "217511841704",
+  appId: "1:217511841704:web:5f34361e030912a9cf579d"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ─── Firestore helpers ─── */
+const USER_ID = 'user_default'; // 단일 사용자 고정 ID
+
+async function fsGet(docId) {
+  try {
+    const snap = await getDoc(doc(db, 'habitData', docId));
+    return snap.exists() ? snap.data().payload : {};
+  } catch(e) { console.warn('fsGet error', e); return {}; }
+}
+
+async function fsSet(docId, payload) {
+  try {
+    await setDoc(doc(db, 'habitData', docId), { payload }, { merge: false });
+  } catch(e) { console.warn('fsSet error', e); }
+}
+
+/* ─── Loading overlay ─── */
+function showLoading(v) {
+  document.getElementById('loading-overlay').style.display = v ? 'flex' : 'none';
+}
+
+const HABITS=[
+  {id:0,icon:'📕',name:'소피반 생존회화 ChatGPT 상황극',short:'소피반 ChatGPT',color:'#5b8dd9'},
+  {id:1,icon:'😆',name:'제미나이로 켈리쌤 브이로그 영어 상황극',short:'켈리쌤 제미나이',color:'#3dba8f'},
+  {id:2,icon:'🇺🇸',name:'소피반 생존회화 책 공부',short:'소피반 책 공부',color:'#e09a30'},
+  {id:3,icon:'📺',name:'The Bear 보기',short:'The Bear',color:'#d96b8c'},
+  {id:4,icon:'🇬🇧',name:'BBC 뉴스 보기',short:'BBC 뉴스',color:'#9b7fe8'},
+];
+const DK=['일','월','화','수','목','금','토'];
+const WH=['월','화','수','목','금','토','일'];
+let data={}, curMonth=new Date();
+let _saving=false;
+
+async function loadHabitData(){
+  data = await fsGet('habits_'+USER_ID);
+}
+
+async function saveHabitData(){
+  await fsSet('habits_'+USER_ID, data);
+}
+
+const now=()=>new Date();
+const dkey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const tkey=()=>dkey(now());
+const isDone=(hid,k)=>!!(data[k]&&data[k][hid]);
+
+function toggle(hid){
+  const k=tkey();
+  if(!data[k])data[k]={};
+  data[k][hid]=!data[k][hid];
+  saveHabitData();
+  render();
+}
+
+function weekDates(){
+  const n=now(),mon=new Date(n);
+  mon.setDate(n.getDate()-((n.getDay()+6)%7));
+  return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+}
+
+function monthDates(ref){
+  const y=ref.getFullYear(),m=ref.getMonth();
+  const first=new Date(y,m,1),last=new Date(y,m+1,0);
+  const pad=(first.getDay()+6)%7,days=[];
+  for(let i=0;i<pad;i++)days.push(null);
+  for(let d=1;d<=last.getDate();d++)days.push(new Date(y,m,d));
+  return days;
+}
+
+function streak(hid){
+  let s=0;const d=new Date(now());
+  while(isDone(hid,dkey(d))){s++;d.setDate(d.getDate()-1);}
+  return s;
+}
+
+function timeProgress(){
+  const n=now();
+  const h=n.getHours(),mi=n.getMinutes(),sec=n.getSeconds();
+  const y=n.getFullYear(),mo=n.getMonth(),dy=n.getDate();
+  const dailySec=h*3600+mi*60+sec;
+  const wday=(n.getDay()+6)%7;
+  const weekSec=wday*86400+dailySec;
+  const dim=new Date(y,mo+1,0).getDate();
+  const monthSec=(dy-1)*86400+dailySec;
+  const startY=new Date(y,0,1);
+  const endY=new Date(y+1,0,1);
+  const yearPct=Math.round((n-startY)/(endY-startY)*100);
+  const pad2=v=>String(v).padStart(2,'0');
+  return [
+    {label:'Daily',  pct:Math.round(dailySec/864), color:'#5b8dd9',
+     line1:`${pad2(h)}:${pad2(mi)} / 24:00`, line2:`${Math.round(dailySec/3600*10)/10}시간 경과`},
+    {label:'Weekly', pct:Math.round(weekSec/6048), color:'#3dba8f',
+     line1:`${['월','화','수','목','금','토','일'][wday]}요일`, line2:`${wday+1}/7일차`},
+    {label:'Monthly',pct:Math.round(monthSec/(dim*864)), color:'#e09a30',
+     line1:`${dy}일 / ${dim}일`, line2:`${dim-dy}일 남음`},
+    {label:'Yearly', pct:yearPct, color:'#d96b8c',
+     line1:`${mo+1}월 ${dy}일`, line2:`${Math.round((endY-n)/86400000)}일 남음`},
+  ];
+}
+
+function ring(pct,color,size=80,sw=5){
+  const r=(size-sw*2)/2;
+  const circ=2*Math.PI*r;
+  const offset=circ*(1-pct/100);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle class="ring-bg" cx="${size/2}" cy="${size/2}" r="${r}" stroke-width="${sw}"/>
+    <circle class="ring-fill" cx="${size/2}" cy="${size/2}" r="${r}"
+      stroke="${color}" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"/>
+  </svg>`;
+}
+
+function renderHeader(){
+  const n=now();
+  document.getElementById('today-label').textContent=
+    `${n.getFullYear()}년 ${n.getMonth()+1}월 ${n.getDate()}일 ${DK[n.getDay()]}요일`;
+  const maxS=Math.max(...HABITS.map(h=>streak(h.id)));
+  const dc=HABITS.filter(h=>isDone(h.id,tkey())).length;
+  document.getElementById('header-streak').textContent=
+    `오늘 ${dc}/${HABITS.length} 완료  ·  🔥 최고 ${maxS}일 연속`;
+}
+
+function renderLegend(){
+  document.getElementById('legend').innerHTML=HABITS.map(h=>
+    `<div class="leg-item"><div class="leg-dot" style="background:${h.color}"></div>${h.icon} ${h.short}</div>`
+  ).join('');
+}
+
+function renderToday(){
+  const tk=tkey();
+  document.getElementById('today-grid').innerHTML=HABITS.map(h=>{
+    const d=isDone(h.id,tk),s=streak(h.id);
+    return `<div class="habit-card ${d?'done':''}" style="--hc:${h.color}" onclick="toggle(${h.id})">
+      <div class="h-icon">${h.icon}</div>
+      <div class="h-info">
+        <div class="h-name">${h.name}</div>
+        <div class="h-sub">${s>0?`🔥 ${s}일 연속`:'시작해볼까요!'}</div>
+      </div>
+      <div class="h-check">
+        <svg class="ck" width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M1.5 5.5l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderWeekGrid(){
+  const wd=weekDates(),tk=tkey();
+  document.getElementById('wg-heads').innerHTML=WH.map(h=>`<div class="wg-head">${h}</div>`).join('');
+  document.getElementById('wg-cells').innerHTML=wd.map(d=>{
+    const k=dkey(d),isT=k===tk;
+    const r0=HABITS.slice(0,3).map(h=>`<div class="wd ${isDone(h.id,k)?'':'miss'}" style="background:${isDone(h.id,k)?h.color:''}"></div>`).join('');
+    const r1=HABITS.slice(3,5).map(h=>`<div class="wd ${isDone(h.id,k)?'':'miss'}" style="background:${isDone(h.id,k)?h.color:''}"></div>`).join('');
+    return `<div class="wg-cell ${isT?'today':''}">
+      <div class="wg-date">${d.getDate()}</div>
+      <div class="wg-dots"><div class="dot-r">${r0}</div><div class="dot-r">${r1}</div></div>
+    </div>`;
+  }).join('');
+  const total=wd.reduce((a,d)=>a+HABITS.filter(h=>isDone(h.id,dkey(d))).length,0);
+  document.getElementById('week-pct-badge').textContent=Math.round(total/(HABITS.length*7)*100)+'%';
+}
+
+function renderMonthGrid(){
+  const days=monthDates(curMonth),tk=tkey();
+  const y=curMonth.getFullYear(),m=curMonth.getMonth();
+  document.getElementById('mg-title').textContent=`${y}년 ${m+1}월`;
+  document.getElementById('mg-heads').innerHTML=WH.map(h=>`<div class="mg-head">${h}</div>`).join('');
+  document.getElementById('mg-cells').innerHTML=days.map(d=>{
+    if(!d)return`<div class="mg-cell empty"></div>`;
+    const k=dkey(d),isT=k===tk;
+    const bars=HABITS.map(h=>`<div class="mbar" style="background:${isDone(h.id,k)?h.color:'rgba(255,255,255,0.07)'}"></div>`).join('');
+    return `<div class="mg-cell ${isT?'today-c':''}">
+      <div class="mg-date">${d.getDate()}</div>
+      <div class="mbars">${bars}</div>
+    </div>`;
+  }).join('');
+  const dim=new Date(y,m+1,0).getDate();
+  let total=0;
+  for(let dd=1;dd<=dim;dd++)HABITS.forEach(h=>{if(isDone(h.id,dkey(new Date(y,m,dd))))total++;});
+  document.getElementById('month-pct-badge').textContent=Math.round(total/(HABITS.length*dim)*100)+'%';
+}
+
+function renderWeekProgress(){
+  const wd=weekDates();
+  let grand=0;
+  const html=HABITS.map(h=>{
+    const d=wd.filter(dd=>isDone(h.id,dkey(dd))).length;
+    const pct=Math.round(d/7*100);
+    grand+=pct;
+    return `<div class="prog-item">
+      <div class="prog-icon">${h.icon}</div>
+      <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${h.color}"></div></div>
+      <div class="prog-count">${d}/7</div>
+    </div>`;
+  }).join('');
+  document.getElementById('week-progress').innerHTML=html;
+  document.getElementById('week-total-pct').textContent=Math.round(grand/HABITS.length)+'%';
+}
+
+function renderMonthProgress(){
+  const y=curMonth.getFullYear(),m=curMonth.getMonth();
+  const dim=new Date(y,m+1,0).getDate();
+  let grand=0;
+  const html=HABITS.map(h=>{
+    let d=0;
+    for(let dd=1;dd<=dim;dd++)if(isDone(h.id,dkey(new Date(y,m,dd))))d++;
+    const pct=Math.round(d/dim*100);
+    grand+=pct;
+    return `<div class="prog-item">
+      <div class="prog-icon">${h.icon}</div>
+      <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${h.color}"></div></div>
+      <div class="prog-count">${d}/${dim}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('month-progress').innerHTML=html;
+  document.getElementById('month-total-pct').textContent=Math.round(grand/HABITS.length)+'%';
+}
+
+function renderTimeProgress(){
+  const tp=timeProgress();
+  const n=now();
+  const pad2=v=>String(v).padStart(2,'0');
+  document.getElementById('time-clock').textContent=
+    `${pad2(n.getHours())}:${pad2(n.getMinutes())}:${pad2(n.getSeconds())} 기준`;
+  document.getElementById('time-grid').innerHTML=tp.map(t=>
+    `<div class="time-item">
+      <div class="time-label">${t.label}</div>
+      <div class="time-ring-wrap">
+        ${ring(t.pct,t.color)}
+        <div class="ring-txt">
+          <div class="ring-num">${t.pct}</div>
+          <div class="ring-pct-sym">%</div>
+        </div>
+      </div>
+      <div class="time-detail">${t.line1}<br>${t.line2}</div>
+    </div>`
+  ).join('');
+}
+
+function changeMonth(delta){
+  curMonth=new Date(curMonth.getFullYear(),curMonth.getMonth()+delta,1);
+  renderMonthGrid();renderMonthProgress();
+}
+
+function render(){
+  renderHeader();renderLegend();renderToday();
+  renderWeekGrid();renderMonthGrid();
+  renderWeekProgress();renderMonthProgress();
+  renderTimeProgress();
+}
+
+
+
+/* ─── Kelly data ─── */
+let kellyData={};
+
+async function loadKellyData(){
+  kellyData = await fsGet('kelly_'+USER_ID);
+}
+
+async function saveKellyData(){
+  await fsSet('kelly_'+USER_ID, kellyData);
+}
+
+const KELLY_GROUPS=[
+  {title:'01편 ~ 10편', items:[
+    {n:'01',t:'모닝루틴 영어표현'},{n:'02',t:'헬스장 영어표현'},{n:'03',t:'장보기 영어표현'},
+    {n:'04',t:'카페 영어표현'},{n:'05',t:'페스티벌 영어표현'},{n:'06',t:'저녁 루틴 영어'},
+    {n:'07',t:'식당 영어'},{n:'08',t:'백화점 쇼핑 영어표현'},{n:'09',t:'전시회 영어'},{n:'10',t:'미용실 영어'},
+  ]},
+  {title:'11편 ~ 20편', items:[
+    {n:'11',t:'주말 영어 루틴'},{n:'12',t:'출근 영어 루틴'},{n:'13',t:'명절 영어 표현'},
+    {n:'14',t:'생일날 에피소드 영어 표현'},{n:'15',t:'불금 불토 주말 루틴'},{n:'16',t:'완벽한 하루 영어로 말해보기'},
+    {n:'17',t:'코리아 버킷리스트 영어 표현'},{n:'18',t:'뷰티 루틴 영어'},{n:'19',t:'공항, 비행기 영어 표현'},{n:'20',t:'미국집 크리스마스 쿠키 만들기'},
+  ]},
+  {title:'21편 ~ 30편', items:[
+    {n:'21',t:'스타벅스·치폴레·서브웨이 주문하기 영어'},{n:'22',t:'땡스기빙데이 영어'},{n:'23',t:'미국 운전 영어'},
+    {n:'24',t:'가족 여행 영어'},{n:'25',t:'병원 영어'},{n:'26',t:'뉴욕 꼭 먹어야 하는 음식 TOP5'},
+    {n:'27',t:'월마트 장보기 영어'},{n:'28',t:'뉴욕 크리스마스 필수 코스 여행'},{n:'29',t:'미국인들의 크리스마스 보내는 법'},{n:'30',t:'미국인들의 새해 보내는 법'},
+  ]},
+  {title:'31편 ~ 40편', items:[
+    {n:'31',t:'미국 드라이브스루 주문하기 영어'},{n:'32',t:'뉴욕 여행 영어표현'},{n:'33',t:'뉴욕 한식당 주문 영어'},
+    {n:'34',t:'겨울날 루틴 영어'},{n:'35',t:'미국 겨울 축제'},{n:'36',t:'미국 미식 축구 경기'},
+    {n:'37',t:'어버이날 부산 브이로그'},{n:'38',t:'미국 통나무집 브이로그'},{n:'39',t:'라스베가스 여행 브이로그 영어'},{n:'40',t:'그랜드캐니언 헬기 투어'},
+  ]},
+  {title:'41편 ~ 50편', items:[
+    {n:'41',t:'주말 한강 브이로그 영어표현'},{n:'42',t:'다이어트 루틴 영어'},{n:'43',t:'오징어 게임 테마 브이로그'},
+    {n:'44',t:'구독자 투표 브이로그(카페 투어)'},{n:'45',t:'서울대 투어, 서울대생 인터뷰'},{n:'46',t:'부산이사 브이로그 영어'},
+    {n:'47',t:'부산 뉴 모닝루틴 영어'},{n:'48',t:'부산 뉴 주말루틴 영어'},{n:'49',t:'부산 뉴 출근루틴 영어'},{n:'50',t:'부산 뉴 저녁루틴 영어'},
+  ]},
+];
+
+function kellyItemKey(n){return 'ep_'+n;}
+
+function kellyToggleItem(n){
+  const k=kellyItemKey(n);
+  kellyData[k]=!kellyData[k];
+  saveKellyData();
+  renderKelly();
+}
+
+function toggleKelly(){
+  const body=document.getElementById('kelly-body');
+  const tog=document.getElementById('kelly-toggle');
+  body.classList.toggle('open');
+  tog.textContent=body.classList.contains('open')?'▲':'▼';
+}
+
+function toggleKellyGroup(gi){
+  document.getElementById('kelly-items-'+gi).classList.toggle('open');
+  document.getElementById('kelly-ghd-'+gi).classList.toggle('open');
+}
+
+function renderKelly(){
+  const allItems=KELLY_GROUPS.flatMap(g=>g.items);
+  const total=allItems.length;
+  const done=allItems.filter(it=>kellyData[kellyItemKey(it.n)]).length;
+  document.getElementById('kelly-done').textContent=done;
+  document.getElementById('kelly-total').textContent=total;
+  document.getElementById('kelly-prog-fill').style.width=(total>0?Math.round(done/total*100):0)+'%';
+
+  document.getElementById('kelly-groups').innerHTML=KELLY_GROUPS.map((g,gi)=>{
+    const gDone=g.items.filter(it=>kellyData[kellyItemKey(it.n)]).length;
+    const gPct=Math.round(gDone/g.items.length*100);
+    const itemsHtml=g.items.map(it=>{
+      const checked=!!kellyData[kellyItemKey(it.n)];
+      return `<div class="kelly-item ${checked?'checked':''}" onclick="kellyToggleItem('${it.n}')">
+        <div class="kelly-item-cb">
+          ${checked?`<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 4.5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
+        </div>
+        <span class="kelly-item-num">${it.n}편</span>
+        <span class="kelly-item-name">${it.t}</span>
+      </div>`;
+    }).join('');
+    return `<div class="kelly-group">
+      <div class="kelly-group-header" id="kelly-ghd-${gi}" onclick="toggleKellyGroup(${gi})">
+        <div class="kelly-group-title">${g.title}</div>
+        <div class="kelly-group-meta">
+          <span class="kelly-group-count">${gDone}/${g.items.length}</span>
+          <div class="kelly-mini-bar"><div class="kelly-mini-fill" style="width:${gPct}%"></div></div>
+          <span class="kelly-chevron">▼</span>
+        </div>
+      </div>
+      <div class="kelly-items" id="kelly-items-${gi}">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── Curriculum data ─── */
+let currData={};
+
+async function loadCurrData(){
+  currData = await fsGet('curriculum_'+USER_ID);
+}
+
+async function saveCurrData(){
+  await fsSet('curriculum_'+USER_ID, currData);
+}
+
+const CHAPTERS=[
+  {title:'1. 공항 & 기내 서비스 이용하기', items:[
+    {n:'001',t:'탑승 수속을 할 때'},{n:'002',t:'비행기 좌석을 정할 때'},{n:'003',t:'수하물을 부칠 때 듣는 질문'},
+    {n:'004',t:'부칠 수하물이 있을 때'},{n:'005',t:'경유지를 거쳐가는 수하물이 있을 때'},{n:'006',t:'수하물의 무게가 초과할 때'},
+    {n:'007',t:'기내 서비스를 요청할 때'},{n:'008',t:'입국 심사관이 묻는 질문'},{n:'009',t:'2차 입국 심사를 받게 될 때'},
+    {n:'010',t:'입국 심사 시 방문 목적을 말할 때'},{n:'011',t:'체류 기간 및 장소를 말할 때'},{n:'012',t:'보유한 항공권 및 현금을 밝힐 때'},
+    {n:'013',t:'세관 신고를 할 때'},{n:'014',t:'수하물을 찾을 때'},
+  ]},
+  {title:'2. 호텔 이용하기', items:[
+    {n:'015',t:'체크인 카운터를 찾을 때'},{n:'016',t:'예약 확인을 할 때'},{n:'017',t:'예약 없이 방을 구할 때'},
+    {n:'018',t:'호텔 정보를 문의할 때'},{n:'019',t:'숙박 명부에 기재할 때'},{n:'020',t:'보증금 결제를 요청받을 때'},
+    {n:'021',t:'조식 서비스에 관해 물어볼 때'},{n:'022',t:'부대 시설에 관해 물어볼 때'},{n:'023',t:'체크아웃 시간 및 수하물 보관을 물어볼 때'},
+    {n:'024',t:'수하물 운반 서비스를 요청할 때'},{n:'025',t:'객실 서비스에 문제가 있을 때'},{n:'026',t:'수건 등 비품을 더 요청할 때'},
+    {n:'027',t:'룸서비스를 주문할 때'},{n:'028',t:'모닝콜을 부탁할 때'},{n:'029',t:'체크아웃을 할 때'},{n:'030',t:'계산서가 잘못되었을 때'},
+  ]},
+  {title:'3. 교통수단 이용하기', items:[
+    {n:'031',t:'목적지까지 가는 법을 물어볼 때'},{n:'032',t:'티켓 구매 및 요금을 문의할 때'},
+    {n:'033',t:'승강장을 찾거나 노선을 물어볼 때'},{n:'034',t:'환승하는 법을 물어볼 때'},
+    {n:'035',t:'택시를 호출하거나 탈 때'},{n:'036',t:'택시 목적지 및 요금을 말할 때'},
+  ]},
+  {title:'4. 길 찾기 & 길 설명하기', items:[
+    {n:'037',t:'길을 잃었을 때'},{n:'038',t:'길을 물어볼 때'},{n:'039',t:'소요되는 거리와 시간을 물어볼 때'},
+    {n:'040',t:'가는 길을 설명할 때 (1)'},{n:'041',t:'가는 길을 설명할 때 (2)'},{n:'042',t:'길 안내 후 인사말을 건넬 때'},
+  ]},
+  {title:'5. 관광 & 쇼핑하기', items:[
+    {n:'043',t:'관광 안내소를 찾을 때'},{n:'044',t:'추천 관광지를 물어볼 때'},{n:'045',t:'투어 상품을 예약할 때'},
+    {n:'046',t:'입장권 구매 및 할인을 물어볼 때'},{n:'047',t:'사진 촬영을 부탁할 때'},{n:'048',t:'특정 매장이나 물건을 찾을 때'},
+    {n:'049',t:'가격을 흥정하거나 할인 여부를 물을 때'},{n:'050',t:'옷이나 신발 사이즈를 물어볼 때'},{n:'051',t:'입어보거나 착용해보고 싶을 때'},
+    {n:'052',t:'색상이나 디자인 변경을 요청할 때'},{n:'053',t:'결제 수단을 선택할 때'},{n:'054',t:'포장이나 배송을 요청할 때'},{n:'055',t:'환불이나 교환을 요청할 때'},
+  ]},
+  {title:'6. 쇼핑 & 환불하기', items:[
+    {n:'056',t:'물건이 어디 있는지 물어볼 때'},{n:'057',t:'찾는 물건이 있는지 물어볼 때'},{n:'058',t:'추천 상품을 물어볼 때'},
+    {n:'059',t:'신상품이나 인기 상품을 찾을 때'},{n:'060',t:'가격을 물어볼 때'},{n:'061',t:'할인이 되는지 물어볼 때'},
+    {n:'062',t:'예산에 맞춰 물건을 찾을 때'},{n:'063',t:'입어보고 싶을 때'},{n:'064',t:'탈의실이 어디인지 물어볼 때'},
+    {n:'065',t:'사이즈를 바꿀 때'},{n:'066',t:'다른 색상이 있는지 물어볼 때'},{n:'067',t:'거울을 보고 싶을 때'},
+    {n:'068',t:'결정하기 힘들 때'},{n:'069',t:'이것으로 하겠다고 말할 때'},{n:'070',t:'계산대가 어디인지 물어볼 때'},
+    {n:'071',t:'결제 방법을 말할 때'},{n:'072',t:'할부로 결제하고 싶을 때'},{n:'073',t:'영수증을 달라고 할 때'},
+    {n:'074',t:'가방에 넣어 달라고 할 때'},{n:'075',t:'선물 포장을 부탁할 때'},{n:'076',t:'환불 규정을 물어볼 때'},
+    {n:'077',t:'교환하고 싶을 때'},{n:'078',t:'환불하고 싶을 때'},
+  ]},
+  {title:'7. 은행 & 우체국 이용하기', items:[
+    {n:'079',t:'은행 계좌를 만들고 싶을 때'},{n:'080',t:'예금이나 출금을 하고 싶을 때'},{n:'081',t:'비밀번호를 잊어버렸을 때'},
+    {n:'082',t:'송금을 하고 싶을 때'},{n:'083',t:'환전을 하고 싶을 때'},{n:'084',t:'우체국에서 우표를 사고 싶을 때'},
+    {n:'085',t:'편지를 보내고 싶을 때'},{n:'086',t:'소포를 보내고 싶을 때'},{n:'087',t:'배송료를 물어볼 때'},{n:'088',t:'도착 예정 시간을 물어볼 때'},
+  ]},
+  {title:'8. 도서관 & 관공서 & 사고 대응', items:[
+    {n:'089',t:'도서관 대출 카드를 만들 때'},{n:'090',t:'책을 빌리고 반납할 때'},{n:'091',t:'관공서에서 서류를 발급받을 때'},
+    {n:'092',t:'주유소에서 주유할 때'},{n:'093',t:'세차 서비스를 이용할 때'},{n:'094',t:'렌터카를 예약하고 빌릴 때'},
+    {n:'095',t:'물건을 분실했을 때'},{n:'096',t:'도난 사고를 당했을 때'},{n:'097',t:'경찰에 신고할 때'},
+    {n:'098',t:'교통사고가 났을 때'},{n:'099',t:'보험 회사에 연락할 때'},{n:'100',t:'응급 환자가 발생했을 때'},
+    {n:'101',t:'대사관에 도움을 요청할 때'},{n:'102',t:'길을 물어보거나 도움을 청할 때'},
+  ]},
+  {title:'9. 식당 가기', items:[
+    {n:'103',t:'식당에 전화를 걸어 예약할 때'},{n:'104',t:'예약을 변경하거나 취소할 때'},{n:'105',t:'일행이 있을 때'},
+    {n:'106',t:'메뉴를 선택하기 힘들 때'},{n:'107',t:'음식이 서빙되는 순서를 부탁할 때'},{n:'108',t:'남은 음식을 싸가고 싶을 때'},
+    {n:'109',t:'계란 프라이를 주문할 때'},{n:'110',t:'스크램블 에그를 주문할 때'},{n:'111',t:'다른 사람 계란 요리를 대신 주문할 때'},
+    {n:'112',t:'스테이크를 주문할 때'},{n:'113',t:'햄버거를 주문할 때'},{n:'114',t:'감자튀김 & 햄버거 부재료를 주문할 때'},
+    {n:'115',t:'샌드위치를 주문할 때'},{n:'116',t:'샌드위치 빵을 데워 달라고 할 때'},{n:'117',t:'샌드위치 재료를 선택할 때'},
+    {n:'118',t:'샌드위치를 잘라 달라고 할 때'},{n:'119',t:'아이스크림을 주문할 때'},{n:'120',t:'아이스크림 토핑을 선택할 때'},
+  ]},
+  {title:'10. 카페 가기', items:[
+    {n:'121',t:'커피를 주문할 때'},{n:'122',t:'여러 잔의 커피를 주문할 때'},{n:'123',t:'커피의 당도를 입맛에 맞게 조절할 때'},
+    {n:'124',t:'커피를 추가/취소/변경할 때'},{n:'125',t:'잔에 여분의 공간을 남겨달라고 할 때'},{n:'126',t:'커피의 온도를 입맛에 맞게 조절할 때'},
+    {n:'127',t:'컵 홀더 & 뚜껑 마개를 요청할 때'},{n:'128',t:'원두의 맛을 문의할 때'},{n:'129',t:'원두를 갈아 달라고 할 때'},
+    {n:'130',t:'포인트 적립 카드를 받고 싶을 때'},{n:'131',t:'카페에서 포인트로 주문하고 싶을 때'},{n:'132',t:'와이파이 & 화장실 이용을 문의할 때'},
+  ]},
+  {title:'11. 술집 가기', items:[
+    {n:'133',t:'맥주를 피처로 주문할 때'},{n:'134',t:'맥주의 양이 얼마나 되는지 물어볼 때'},{n:'135',t:'생맥주를 주문할 때'},
+    {n:'136',t:'와인을 잔으로 주문할 때'},{n:'137',t:'원하는 와인을 시도해 보고 싶을 때'},{n:'138',t:'특정 와인을 주문하고 싶을 때'},
+    {n:'139',t:'와인의 맛을 물어보고 싶을 때'},{n:'140',t:'와인과 어울리는 치즈를 고를 때'},
+  ]},
+  {title:'12. 영화관 가기', items:[
+    {n:'141',t:'온라인으로 예매한 티켓을 찾을 때'},{n:'142',t:'영화 시간 및 티켓 가격을 물어볼 때'},
+    {n:'143',t:'상영 여부와 상영 시간대를 물어볼 때'},{n:'144',t:'극장에서 직접 티켓을 구매할 때'},
+  ]},
+  {title:'13. 미용실 & 이발소 가기', items:[
+    {n:'145',t:'미용실에 예약 전화를 걸 때'},{n:'146',t:'어떤 머리 손질을 하러 왔는지 말할 때'},{n:'147',t:'어떤 파마를 원하는지 말할 때'},
+    {n:'148',t:'머리를 다듬어 달라고 할 때'},{n:'149',t:'원하는 머리 길이를 설명할 때'},{n:'150',t:'원하는 머리 스타일을 설명할 때'},
+    {n:'151',t:'앞머리를 잘라 달라고 할 때'},{n:'152',t:'염색해 달라고 할 때'},{n:'153',t:'머리색을 바꿔 달라고 할 때'},
+    {n:'154',t:'머리 스타일링을 해달라고 할 때'},{n:'155',t:'가르마를 타 달라고 할 때'},{n:'156',t:'짧은 남자 머리를 다듬어 달라고 할 때'},
+  ]},
+  {title:'14. 비즈니스 전화 응대하기', items:[
+    {n:'157',t:'담당자를 바꿔 달라고 할 때'},{n:'158',t:'담당자가 부재중인지 물어볼 때'},{n:'159',t:'담당자가 언제쯤 돌아오는지 물어볼 때'},
+    {n:'160',t:'전화를 건 본인의 신분을 밝힐 때'},{n:'161',t:'메시지를 남기겠다고 할 때'},{n:'162',t:'메시지를 남기겠냐고 물어볼 때'},
+    {n:'163',t:'메시지를 잘 전달하겠다고 할 때'},{n:'164',t:'전화를 끊지 말고 기다려 달라고 할 때'},{n:'165',t:'전화가 오면 다시 연락하겠다고 할 때'},
+    {n:'166',t:'다시 전화해 달라고 부탁할 때'},{n:'167',t:'전화 온 곳이 어디인지 확인할 때'},{n:'168',t:'전화가 잘못 걸려 왔을 때'},
+    {n:'169',t:'전화 연결 상태가 좋지 않을 때'},{n:'170',t:'전화를 바꿔 준다고 할 때'},{n:'171',t:'담당자가 회의 중일 때'},
+    {n:'172',t:'통화 내용 확인을 위해 다시 물어볼 때'},{n:'173',t:'전화 용건을 물어볼 때'},{n:'174',t:'통화를 마칠 때'},
+  ]},
+  {title:'15. 병원 가기', items:[
+    {n:'175',t:'병원에 검진 및 진료를 예약할 때'},{n:'176',t:'병원 예약 일정을 변경할 때'},{n:'177',t:'병원 운영 시간을 확인하고자 할 때'},
+    {n:'178',t:'예약 없이 진료가 가능한지 물어볼 때'},{n:'179',t:'진료 기록이 필요하다고 요청할 때'},{n:'180',t:'보험 적용이 가능한지 물어볼 때'},
+    {n:'181',t:'예방 접종을 하러 왔다고 할 때'},{n:'182',t:'몸에 열이 있다고 설명할 때'},{n:'183',t:'복통과 구토 증상을 설명할 때'},
+    {n:'184',t:'설사와 변비 증상을 설명할 때'},{n:'185',t:'귀가 아픈 증상을 설명할 때'},{n:'186',t:'약이 효과가 없다고 설명할 때'},
+    {n:'187',t:'골절이 의심되는 부위를 설명할 때'},{n:'188',t:'골절 의심 부위를 확인해 달라고 할 때'},
+  ]},
+  {title:'16. 약국 가기', items:[
+    {n:'189',t:'특정 의약품이 어디 있는지 물어볼 때'},{n:'190',t:'증상에 맞는 의약품을 찾고자 할 때'},{n:'191',t:'처방전이 필요 없는 약을 찾을 때'},
+    {n:'192',t:'약의 복용 방법에 관해 물어볼 때'},{n:'193',t:'약의 부작용 & 주의 사항을 문의할 때'},{n:'194',t:'약의 강도를 조절하고자 할 때'},
+    {n:'195',t:'약사에게 배탈이 났다고 말할 때'},{n:'196',t:'약사에게 기침 & 두통 증상을 말할 때'},{n:'197',t:'반창고나 붕대가 있는지 물어볼 때'},
+    {n:'198',t:'파스나 찜질용 팩에 관해 물어볼 때'},
+  ]},
+  {title:'17. 학원 등록하기', items:[
+    {n:'199',t:'학원에 등록하러 왔다고 할 때'},{n:'200',t:'관심 있는 수업에 관해 문의할 때'},{n:'201',t:'등록비 & 수업료에 관해 물어볼 때'},
+    {n:'202',t:'수업료 자동 납부가 되는지 물어볼 때'},{n:'203',t:'수업료 자동 납부를 일시 정지시킬 때'},{n:'204',t:'수업료 자동 납부를 안 하겠다고 할 때'},
+    {n:'205',t:'자녀를 수업에 등록시키고자 할 때'},{n:'206',t:'강사와 상담하고 싶다고 할 때'},{n:'207',t:'수업 듣는 목적을 강사와 상담할 때'},
+    {n:'208',t:'어떤 레벨의 수업이 좋을지 문의할 때'},{n:'209',t:'수업 시작/종료일을 물어볼 때'},{n:'210',t:'수업 횟수에 관해 문의할 때'},
+    {n:'211',t:'수업 전 준비 사항에 관해 물어볼 때'},{n:'212',t:'시설 이용 방법에 관해 문의할 때'},
+  ]},
+];
+
+function currItemKey(n){return 'item_'+n;}
+
+function currToggleItem(n){
+  const k=currItemKey(n);
+  currData[k]=!currData[k];
+  saveCurrData();
+  renderCurriculum();
+}
+
+function toggleCurriculum(){
+  const body=document.getElementById('curr-body');
+  const tog=document.getElementById('curr-toggle');
+  body.classList.toggle('open');
+  tog.textContent=body.classList.contains('open')?'▲':'▼';
+}
+
+function toggleChapter(ci){
+  const el=document.getElementById('chapter-items-'+ci);
+  const hd=document.getElementById('chapter-hd-'+ci);
+  el.classList.toggle('open');
+  hd.classList.toggle('open');
+}
+
+function renderCurriculum(){
+  const allItems=CHAPTERS.flatMap(c=>c.items);
+  const totalItems=allItems.length;
+  const doneItems=allItems.filter(it=>currData[currItemKey(it.n)]).length;
+  document.getElementById('curr-done').textContent=doneItems;
+  document.getElementById('curr-total').textContent=totalItems;
+  const fillPct=totalItems>0?Math.round(doneItems/totalItems*100):0;
+  document.getElementById('curr-prog-fill').style.width=fillPct+'%';
+
+  document.getElementById('curr-chapters').innerHTML=CHAPTERS.map((ch,ci)=>{
+    const chDone=ch.items.filter(it=>currData[currItemKey(it.n)]).length;
+    const chPct=Math.round(chDone/ch.items.length*100);
+    const itemsHtml=ch.items.map(it=>{
+      const isDoneItem=!!currData[currItemKey(it.n)];
+      return `<div class="item-row ${isDoneItem?'checked':''}" onclick="currToggleItem('${it.n}')">
+        <div class="item-cb">
+          ${isDoneItem?`<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 4.5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
+        </div>
+        <span class="item-num">${it.n}</span>
+        <span class="item-name">${it.t}</span>
+      </div>`;
+    }).join('');
+    return `<div class="chapter-block">
+      <div class="chapter-header" id="chapter-hd-${ci}" onclick="toggleChapter(${ci})">
+        <div class="chapter-title">${ch.title}</div>
+        <div class="chapter-meta">
+          <span class="chapter-count">${chDone}/${ch.items.length}</span>
+          <div class="chapter-mini-bar"><div class="chapter-mini-fill" style="width:${chPct}%"></div></div>
+          <span class="chapter-chevron">▼</span>
+        </div>
+      </div>
+      <div class="items-list" id="chapter-items-${ci}">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── Expose functions to global scope (needed for inline onclick with ES module) ─── */
+window.toggle = toggle;
+window.toggleCurriculum = toggleCurriculum;
+window.toggleChapter = toggleChapter;
+window.currToggleItem = currToggleItem;
+window.toggleKelly = toggleKelly;
+window.toggleKellyGroup = toggleKellyGroup;
+window.kellyToggleItem = kellyToggleItem;
+window.changeMonth = changeMonth;
+
+/* ─── Bootstrap: load all data then render ─── */
+async function init(){
+  showLoading(true);
+  await Promise.all([loadHabitData(), loadKellyData(), loadCurrData()]);
+  showLoading(false);
+  render();
+  renderCurriculum();
+  renderKelly();
+}
+
+init();
+
+// Update time every second
+setInterval(()=>{renderTimeProgress();renderHeader();},1000);
+</script>
+</body>
+</html>
