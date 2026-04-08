@@ -745,6 +745,7 @@ const HABITS=[
   {id:2,icon:'🇺🇸',name:'소피반 생존회화 책 공부',short:'소피반 책 공부',color:'#e09a30'},
   {id:3,icon:'📺',name:'The Bear 보기',short:'The Bear',color:'#d96b8c'},
   {id:4,icon:'🇬🇧',name:'BBC 뉴스 보기',short:'BBC 뉴스',color:'#9b7fe8'},
+  {id:5,icon:'✍️',name:'하루키책 필사',short:'하루키 필사',color:'#c17f3e',weekdaysOnly:true},
 ];
 const DK=['일','월','화','수','목','금','토'];
 const WH=['월','화','수','목','금','토','일'];
@@ -763,6 +764,8 @@ const now=()=>new Date();
 const dkey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const tkey=()=>dkey(now());
 const isDone=(hid,k)=>!!(data[k]&&data[k][hid]);
+const isWeekday=(d)=>{ const day=d.getDay(); return day>=1&&day<=5; };
+const isActiveForDate=(h,d)=>h.weekdaysOnly ? isWeekday(d) : true;
 
 function toggle(hid){
   const k=tkey();
@@ -834,9 +837,11 @@ function renderHeader(){
   document.getElementById('today-label').textContent=
     `${n.getFullYear()}년 ${n.getMonth()+1}월 ${n.getDate()}일 ${DK[n.getDay()]}요일`;
   const maxS=Math.max(...HABITS.map(h=>streak(h.id)));
-  const dc=HABITS.filter(h=>isDone(h.id,tkey())).length;
+  const todayD=now();
+  const activeToday=HABITS.filter(h=>isActiveForDate(h,todayD));
+  const dc=activeToday.filter(h=>isDone(h.id,tkey())).length;
   document.getElementById('header-streak').textContent=
-    `오늘 ${dc}/${HABITS.length} 완료  ·  🔥 최고 ${maxS}일 연속`;
+    `오늘 ${dc}/${activeToday.length} 완료  ·  🔥 최고 ${maxS}일 연속`;
 }
 
 function renderLegend(){
@@ -847,8 +852,20 @@ function renderLegend(){
 
 function renderToday(){
   const tk=tkey();
+  const todayD=now();
   document.getElementById('today-grid').innerHTML=HABITS.map(h=>{
+    const active=isActiveForDate(h,todayD);
     const d=isDone(h.id,tk),s=streak(h.id);
+    if(!active){
+      return `<div class="habit-card" style="--hc:${h.color};opacity:0.35;cursor:default;">
+        <div class="h-icon">${h.icon}</div>
+        <div class="h-info">
+          <div class="h-name">${h.name}</div>
+          <div class="h-sub">주말 휴무 📅 월~금만</div>
+        </div>
+        <div class="h-check" style="opacity:0.3"></div>
+      </div>`;
+    }
     return `<div class="habit-card ${d?'done':''}" style="--hc:${h.color}" onclick="toggle(${h.id})">
       <div class="h-icon">${h.icon}</div>
       <div class="h-info">
@@ -869,15 +886,21 @@ function renderWeekGrid(){
   document.getElementById('wg-heads').innerHTML=WH.map(h=>`<div class="wg-head">${h}</div>`).join('');
   document.getElementById('wg-cells').innerHTML=wd.map(d=>{
     const k=dkey(d),isT=k===tk;
+    const cellDate=d;
     const r0=HABITS.slice(0,3).map(h=>`<div class="wd ${isDone(h.id,k)?'':'miss'}" style="background:${isDone(h.id,k)?h.color:''}"></div>`).join('');
     const r1=HABITS.slice(3,5).map(h=>`<div class="wd ${isDone(h.id,k)?'':'miss'}" style="background:${isDone(h.id,k)?h.color:''}"></div>`).join('');
+    const h5=HABITS[5];
+    const r2=isActiveForDate(h5,cellDate)
+      ? `<div class="wd ${isDone(h5.id,k)?'':'miss'}" style="background:${isDone(h5.id,k)?h5.color:''}"></div>`
+      : `<div class="wd" style="background:rgba(255,255,255,0.04);"></div>`;
     return `<div class="wg-cell ${isT?'today':''}">
       <div class="wg-date">${d.getDate()}</div>
-      <div class="wg-dots"><div class="dot-r">${r0}</div><div class="dot-r">${r1}</div></div>
+      <div class="wg-dots"><div class="dot-r">${r0}</div><div class="dot-r">${r1}</div><div class="dot-r">${r2}</div></div>
     </div>`;
   }).join('');
-  const total=wd.reduce((a,d)=>a+HABITS.filter(h=>isDone(h.id,dkey(d))).length,0);
-  document.getElementById('week-pct-badge').textContent=Math.round(total/(HABITS.length*7)*100)+'%';
+  const totalDone=wd.reduce((a,d)=>a+HABITS.filter(h=>isActiveForDate(h,d)&&isDone(h.id,dkey(d))).length,0);
+  const totalPossible=wd.reduce((a,d)=>a+HABITS.filter(h=>isActiveForDate(h,d)).length,0);
+  document.getElementById('week-pct-badge').textContent=Math.round(totalDone/totalPossible*100)+'%';
 }
 
 function renderMonthGrid(){
@@ -888,29 +911,43 @@ function renderMonthGrid(){
   document.getElementById('mg-cells').innerHTML=days.map(d=>{
     if(!d)return`<div class="mg-cell empty"></div>`;
     const k=dkey(d),isT=k===tk;
-    const bars=HABITS.map(h=>`<div class="mbar" style="background:${isDone(h.id,k)?h.color:'rgba(255,255,255,0.07)'}"></div>`).join('');
+    const dateObj=d;
+    const bars=HABITS.map(h=>{
+      if(!isActiveForDate(h,dateObj)) return `<div class="mbar" style="background:rgba(255,255,255,0.03)"></div>`;
+      return `<div class="mbar" style="background:${isDone(h.id,k)?h.color:'rgba(255,255,255,0.07)'}"></div>`;
+    }).join('');
     return `<div class="mg-cell ${isT?'today-c':''}">
       <div class="mg-date">${d.getDate()}</div>
       <div class="mbars">${bars}</div>
     </div>`;
   }).join('');
   const dim=new Date(y,m+1,0).getDate();
-  let total=0;
-  for(let dd=1;dd<=dim;dd++)HABITS.forEach(h=>{if(isDone(h.id,dkey(new Date(y,m,dd))))total++;});
-  document.getElementById('month-pct-badge').textContent=Math.round(total/(HABITS.length*dim)*100)+'%';
+  let totalDoneM=0, totalPossM=0;
+  for(let dd=1;dd<=dim;dd++){
+    const date=new Date(y,m,dd);
+    HABITS.forEach(h=>{
+      if(!isActiveForDate(h,date)) return;
+      totalPossM++;
+      if(isDone(h.id,dkey(date))) totalDoneM++;
+    });
+  }
+  document.getElementById('month-pct-badge').textContent=Math.round(totalDoneM/totalPossM*100)+'%';
 }
 
 function renderWeekProgress(){
   const wd=weekDates();
   let grand=0;
   const html=HABITS.map(h=>{
-    const d=wd.filter(dd=>isDone(h.id,dkey(dd))).length;
-    const pct=Math.round(d/7*100);
+    const activeDays=wd.filter(dd=>isActiveForDate(h,dd));
+    const d=activeDays.filter(dd=>isDone(h.id,dkey(dd))).length;
+    const total=activeDays.length;
+    const pct=total>0?Math.round(d/total*100):0;
     grand+=pct;
+    const tag=h.weekdaysOnly?`<span style="font-size:10px;color:var(--text3);margin-left:4px;">월~금</span>`:'';
     return `<div class="prog-item">
       <div class="prog-icon">${h.icon}</div>
       <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${h.color}"></div></div>
-      <div class="prog-count">${d}/7</div>
+      <div class="prog-count">${d}/${total}${h.weekdaysOnly?'<span style="font-size:9px;color:var(--text3)"> 주중</span>':''}</div>
     </div>`;
   }).join('');
   document.getElementById('week-progress').innerHTML=html;
@@ -922,14 +959,19 @@ function renderMonthProgress(){
   const dim=new Date(y,m+1,0).getDate();
   let grand=0;
   const html=HABITS.map(h=>{
-    let d=0;
-    for(let dd=1;dd<=dim;dd++)if(isDone(h.id,dkey(new Date(y,m,dd))))d++;
-    const pct=Math.round(d/dim*100);
+    let d=0, total=0;
+    for(let dd=1;dd<=dim;dd++){
+      const date=new Date(y,m,dd);
+      if(!isActiveForDate(h,date)) continue;
+      total++;
+      if(isDone(h.id,dkey(date))) d++;
+    }
+    const pct=total>0?Math.round(d/total*100):0;
     grand+=pct;
     return `<div class="prog-item">
       <div class="prog-icon">${h.icon}</div>
       <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${h.color}"></div></div>
-      <div class="prog-count">${d}/${dim}</div>
+      <div class="prog-count">${d}/${total}${h.weekdaysOnly?'<span style="font-size:9px;color:var(--text3)"> 주중</span>':''}</div>
     </div>`;
   }).join('');
   document.getElementById('month-progress').innerHTML=html;
